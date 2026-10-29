@@ -1,0 +1,59 @@
+{
+  "name": "dsh-topic-wall",
+  "version": "0.3.0",
+  "type": "module",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "tests"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-sidebar",
+        "@deepseek-ai/dsh-client-ui-session"
+      ]
+    }
+  },
+  "description": "A multi-session topic wall for DeepSeek Harness: pinned/active/collection cards, real history, inline reply, approvals, themes.",
+  "license": "MIT",
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "plugin",
+    "topic-wall",
+    "multi-session"
+  ],
+  "scripts": {
+    "test": "node tests/smoke.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/caichangzhan/dsh-topic-wall.git"
+  },
+  "homepage": "https://github.com/caichangzhan/dsh-topic-wall#readme",
+  "bugs": {
+    "url": "https://github.com/caichangzhan/dsh-topic-wall/issues"
+  }
+}

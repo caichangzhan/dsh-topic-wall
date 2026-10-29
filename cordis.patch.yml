@@ -1,0 +1,3 @@
+- insert:
+    - id: topic-wall
+      name: 'dsh-topic-wall'
