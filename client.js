@@ -1549,6 +1549,37 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
   .tw-page.tw-ios .tw-msg.is-new,.tw-page.tw-ios .tw-typing i{animation:none!important}
 }
 
+/* Theme backgrounds */
+.tw-page.tw-ios{
+  background-color:#F3F6FC;
+  background-image:
+    radial-gradient(1100px 620px at 6% -12%, rgba(0,122,255,.18), transparent 62%),
+    radial-gradient(900px 560px at 102% -4%, rgba(255,149,0,.12), transparent 58%),
+    radial-gradient(900px 700px at 48% 118%, rgba(88,86,214,.12), transparent 62%),
+    radial-gradient(rgba(60,60,67,.045) 1px, transparent 1.2px),
+    linear-gradient(180deg,#FAFBFE 0%,#F2F6FC 48%,#F6F7FB 100%);
+  background-size:auto,auto,auto,24px 24px,auto;
+}
+.tw-page[data-style="qzone"]{
+  background-color:#D8EEFF;
+  background-image:
+    radial-gradient(760px 300px at 10% 4%, rgba(255,255,255,.92), transparent 64%),
+    radial-gradient(560px 240px at 86% 14%, rgba(255,255,255,.78), transparent 66%),
+    radial-gradient(420px 190px at 58% 38%, rgba(255,255,255,.55), transparent 70%),
+    radial-gradient(rgba(47,128,237,.10) 1px, transparent 1.2px),
+    linear-gradient(180deg,#BFE4FF 0%,#DDF1FF 42%,#F3FAFF 100%);
+  background-size:auto,auto,auto,28px 28px,auto;
+}
+.tw-page[data-style="hacker"]{
+  background-color:#020502;
+  background-image:
+    radial-gradient(900px 520px at 50% -12%, rgba(57,255,20,.15), transparent 62%),
+    linear-gradient(rgba(57,255,20,.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(57,255,20,.055) 1px, transparent 1px),
+    linear-gradient(180deg,#020502 0%,#030803 60%,#010301 100%);
+  background-size:auto,24px 24px,24px 24px,auto;
+}
+
 `;
 
     const Icon = ({ size = 16 }) => h("svg", { viewBox: "0 0 24 24", width: size, height: size, fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true },

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.9
+
+- Give all three themes full-page backgrounds: iOS mesh + dot grid, QQ Space sky/clouds, Hacker grid + green glow.
+
 ## 0.3.8
 
 - Give QQ Space and Hacker themes their own typing indicators: a blue chat bubble and a terminal prompt with a blinking block cursor.
