@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.3
+
+- Filter `workspaces.archivedSessionIds` out of the wall: archived sessions no longer remain as cards even though `sessions.list` still contains them.
+
 ## 0.3.2
 
 - Archive now handles `workspace/session-active`: asks whether to stop running work and retries with `stopActivity: true`.

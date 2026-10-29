@@ -17,6 +17,7 @@ window.__ModuleLoader__.load({
     const EMPTY = Object.freeze([]);
     const EMPTY_STATUS = new Map();
     const EMPTY_MODEL_STATE = Object.freeze({ current: null, routable: null, groups: EMPTY, failures: EMPTY, status: "idle", pending: null, error: null });
+    const EMPTY_WORKSPACE_STATE = Object.freeze({ items: EMPTY, archivedSessionIds: EMPTY, pinnedSessionIds: EMPTY, phase: "ready" });
     const RECENT_HISTORY_MS = 24 * 60 * 60 * 1000;
     const olderQueue = (() => {
       let active = 0;
@@ -2614,13 +2615,19 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
     }
 
     function TopicWallPage(props) {
-      const { sessionsStore, statusStore, t, sessions, openSession, newChatIn, modelDirectories, forkSession, archiveSession } = props;
+      const { sessionsStore, statusStore, workspacesStore, t, sessions, openSession, newChatIn, modelDirectories, forkSession, archiveSession } = props;
       const list = useSyncExternalStore(
         (cb) => sessionsStore.subscribe(cb), () => sessionsStore.getSnapshot(), () => sessionsStore.getSnapshot()
       );
       const statusMap = useSyncExternalStore(
         (cb) => statusStore.subscribe(cb), () => statusStore.getSnapshot(), () => statusStore.getSnapshot()
       );
+      const workspaceState = useSyncExternalStore(
+        (cb) => (workspacesStore ? workspacesStore.subscribe(cb) : () => {}),
+        () => (workspacesStore ? workspacesStore.getSnapshot() : EMPTY_WORKSPACE_STATE),
+        () => (workspacesStore ? workspacesStore.getSnapshot() : EMPTY_WORKSPACE_STATE)
+      );
+      const archivedIds = useMemo(() => new Set((workspaceState && workspaceState.archivedSessionIds) || EMPTY), [workspaceState]);
       const [, tick] = useState(0);
       const activeSeq = useRef(0);
       const activeSince = useRef(new Map());
@@ -2680,10 +2687,11 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
           if (!row || seen.has(row.id)) return false;
           seen.add(row.id);
           if (row.parentId || (row.depth || 0) > 0 || row.origin === "subagent") return false;
+          if (archivedIds.has(row.id)) return false;
           if (row.blank && !newChatIds.has(row.id)) return false;
           return true;
         }).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-      }, [items, newChatIds]);
+      }, [items, newChatIds, archivedIds]);
       const byId = useMemo(() => Object.fromEntries(rows.map((row) => [row.id, row])), [rows]);
       const validPins = pins.filter((id) => byId[id]);
       const pinnedRows = validPins.map((id) => byId[id]);
@@ -2936,6 +2944,7 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
         const uiWorkspace = ctx.get("uiWorkspace");
         const injected = {
           sessionsStore, statusStore, t, sessions: ctx.sessions,
+          workspacesStore: uiWorkspace && uiWorkspace.workspaces ? uiWorkspace.workspaces.list : null,
           get modelDirectories() { return ctx.get("modelDirectories"); },
           openSession(id) {
             try { if (uiWorkspace && typeof uiWorkspace.openSession === "function") uiWorkspace.openSession(id); }
