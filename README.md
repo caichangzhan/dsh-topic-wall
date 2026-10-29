@@ -49,7 +49,7 @@ dsh plugin --profile desktop add /path/to/dsh-topic-wall
 ### Tarball
 
 ```sh
-dsh plugin --profile desktop add /path/to/dsh-topic-wall-0.3.2.tgz
+dsh plugin --profile desktop add /path/to/dsh-topic-wall-0.3.3.tgz
 ```
 
 桌面端不加载 Web client HMR。更新 `client.js` 后需要**重启桌面端**；`Cmd+R` 可能仍用旧 bundle。
