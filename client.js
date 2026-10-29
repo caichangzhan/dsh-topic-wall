@@ -1553,6 +1553,12 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
 }
 
 /* Theme backgrounds */
+/* Let the wall background show through; cards keep their own surfaces */
+.tw-page .tw-board{background:transparent!important}
+.tw-page .tw-shelf{background:transparent!important}
+.tw-page .tw-shelf-body{background:transparent!important}
+.tw-page .tw-wspace{background:transparent!important}
+
 .tw-page.tw-ios{
   background-color:#F3F6FC;
   background-image:

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.1
+
+- Make `.tw-board`, shelves, and workspaces transparent so the themed wall background is visible everywhere; card surfaces are unchanged.
+
 ## 0.4.0
 
 - Inline editing for queued messages: ✎ turns the row into an input; Enter saves, Escape cancels.
