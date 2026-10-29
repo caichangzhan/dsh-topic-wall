@@ -197,7 +197,7 @@ window.__ModuleLoader__.load({
     const zh = {
       panel: "对话墙", title: "对话墙", newChat: "新建聊天",
       model: "模型", modelLoading: "加载模型…", modelEmpty: "没有可用模型", modelSwitchFailed: "切换模型失败", modelAccount: "账号", modelSession: "最近会话",
-      more: "更多操作", rename: "重命名", fork: "创建分支", archive: "归档会话", archiveConfirm: "归档这个会话？运行中的任务会被中断。", actionFailed: "操作失败", renameFailed: "重命名失败", forkFailed: "创建分支失败", archiveFailed: "归档失败",
+      more: "更多操作", rename: "重命名", fork: "创建分支", archive: "归档会话", archiveConfirm: "归档这个会话？", stopAndArchiveConfirm: "这个会话仍在运行。停止当前工作并归档？", actionFailed: "操作失败", renameFailed: "重命名失败", forkFailed: "创建分支失败", archiveFailed: "归档失败",
       cardCrashed: "这张卡片渲染失败，墙体和其他卡片仍可用。", retry: "重试",
       intro: "置顶、进行中、聊天集合",
       hint: "卡内可直接回复 · 点标题旁 ↗ 打开原会话",
@@ -240,7 +240,7 @@ window.__ModuleLoader__.load({
     const en = {
       panel: "Topic Wall", title: "Topic Wall", newChat: "New chat",
       model: "Model", modelLoading: "Loading models…", modelEmpty: "No models available", modelSwitchFailed: "Failed to switch model", modelAccount: "Account", modelSession: "Recent session",
-      more: "More actions", rename: "Rename", fork: "Fork session", archive: "Archive session", archiveConfirm: "Archive this session? Running work will be interrupted.", actionFailed: "Action failed", renameFailed: "Rename failed", forkFailed: "Fork failed", archiveFailed: "Archive failed",
+      more: "More actions", rename: "Rename", fork: "Fork session", archive: "Archive session", archiveConfirm: "Archive this session?", stopAndArchiveConfirm: "This session is still running. Stop its work and archive it?", actionFailed: "Action failed", renameFailed: "Rename failed", forkFailed: "Fork failed", archiveFailed: "Archive failed",
       cardCrashed: "This card failed to render; the wall and other cards are still usable.", retry: "Retry",
       intro: "Pinned, active, and collected sessions",
       hint: "Reply in a card · use ↗ to open the original conversation",
@@ -1391,6 +1391,7 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
 .tw-page[data-style="hacker"] .tw-new-chat{border:1px solid var(--tw-accent);border-radius:0;background:transparent;color:var(--tw-accent)}
 .tw-page[data-style="hacker"] .tw-new-chat:hover{background:rgba(57,255,20,.08)}
 
+.tw-card-action-error{margin:3px 0 0;padding:4px 7px;border-radius:5px;background:rgba(180,35,24,.07);color:#B42318;font-size:10.5px;line-height:1.4}
 /* Card-level crash fallback */
 .tw-card-error{border-top-color:#B42318!important;min-height:180px}
 .tw-card-error .tw-card-title{color:#B42318}
@@ -2226,6 +2227,7 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
       const [renaming, setRenaming] = useState(false);
       const [renameValue, setRenameValue] = useState("");
       const [acting, setActing] = useState(false);
+      const [actionError, setActionError] = useState("");
       const inView = useInView(cardRef, 600);
       const retained = useRetained(sessions, row.id, inView);
       const focusTimer = useRef(null);
@@ -2302,6 +2304,7 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
           if (!result || result.ok !== true) throw new Error((result && result.error && result.error.message) || t("renameFailed"));
           setRenaming(false);
         } catch (error) {
+          setActionError(t("renameFailed"));
           logStore.add({ level: "error", source: "rename", message: error && error.message || t("renameFailed"), stack: error && error.stack, context: { sessionId: row.id } });
         } finally {
           setActing(false);
@@ -2316,8 +2319,9 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
         setMenuOpen(false);
         if (typeof forkSession !== "function") return;
         setActing(true);
+        setActionError("");
         try { await forkSession(row.id); }
-        catch (error) { logStore.add({ level: "error", source: "fork", message: error && error.message || t("forkFailed"), stack: error && error.stack, context: { sessionId: row.id } }); }
+        catch (error) { setActionError(t("forkFailed")); logStore.add({ level: "error", source: "fork", message: error && error.message || t("forkFailed"), stack: error && error.stack, context: { sessionId: row.id } }); }
         finally { setActing(false); }
       };
       const doArchive = async () => {
@@ -2325,9 +2329,22 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
         if (typeof archiveSession !== "function") return;
         if (!window.confirm(t("archiveConfirm"))) return;
         setActing(true);
-        try { await archiveSession(row.id); }
-        catch (error) { logStore.add({ level: "error", source: "archive", message: error && error.message || t("archiveFailed"), stack: error && error.stack, context: { sessionId: row.id } }); }
-        finally { setActing(false); }
+        setActionError("");
+        try {
+          try {
+            await archiveSession(row.id);
+          } catch (error) {
+            const code = error && error.rpcError && error.rpcError.code;
+            if (code !== "workspace/session-active") throw error;
+            if (!window.confirm(t("stopAndArchiveConfirm"))) return;
+            await archiveSession(row.id, { stopActivity: true });
+          }
+        } catch (error) {
+          setActionError(t("archiveFailed"));
+          logStore.add({ level: "error", source: "archive", message: error && error.message || t("archiveFailed"), stack: error && error.stack, context: { sessionId: row.id, code: error && error.rpcError && error.rpcError.code } });
+        } finally {
+          setActing(false);
+        }
       };
       return h("article", {
         className: "tw-card " + variant + statusClass + (entering ? " is-entering" : "") + (inView ? "" : " is-offscreen"), ref: cardRef, "data-menu-open": menuOpen ? "true" : "false",
@@ -2368,6 +2385,7 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
             h("span", null, relativeTime(row.updatedAt, t)),
             h(ModelPicker, { models, sessionId: row.id, t })
           ),
+          actionError ? h("div", { className: "tw-card-action-error" }, actionError) : null,
           retained.status === "ready"
             ? h(CardConversation, { binding: retained.binding, status, t, layoutKey, tools, pending: status && status.pendingInteraction, onOpen: () => openSession(row.id) })
             : h(React.Fragment, null,
@@ -2929,9 +2947,9 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
             if (!uiWorkspace || typeof uiWorkspace.forkSession !== "function") throw new Error("fork is unavailable");
             return uiWorkspace.forkSession(sessionId);
           },
-          async archiveSession(sessionId) {
+          async archiveSession(sessionId, options) {
             if (!uiWorkspace || typeof uiWorkspace.archiveSession !== "function") throw new Error("archive is unavailable");
-            return uiWorkspace.archiveSession(sessionId);
+            return options === undefined ? uiWorkspace.archiveSession(sessionId) : uiWorkspace.archiveSession(sessionId, options);
           },
           async newChatIn(cwd) {
             try {

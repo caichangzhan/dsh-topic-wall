@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.2
+
+- Archive now handles `workspace/session-active`: asks whether to stop running work and retries with `stopActivity: true`.
+- Archive/fork/rename failures show a visible inline card error instead of only a log entry.
+
 ## 0.3.1
 
 - Isolate render crashes per card: one broken card no longer takes down the whole wall.
