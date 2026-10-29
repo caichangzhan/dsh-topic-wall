@@ -1,6 +1,6 @@
 # dsh-topic-wall
 
-版本 0.3.6 · MIT License
+版本 0.3.7 · MIT License
 
 多会话「对话墙」插件：把 DeepSeek Harness 的会话按 **置顶 / 进行中 / 聊天集合** 三段排列成卡片。不进入会话，也能读历史、看状态、处理审批、发下一条消息。
 
@@ -49,7 +49,7 @@ dsh plugin --profile desktop add /path/to/dsh-topic-wall
 ### Tarball
 
 ```sh
-dsh plugin --profile desktop add /path/to/dsh-topic-wall-0.3.6.tgz
+dsh plugin --profile desktop add /path/to/dsh-topic-wall-0.3.7.tgz
 ```
 
 桌面端不加载 Web client HMR。更新 `client.js` 后需要**重启桌面端**；`Cmd+R` 可能仍用旧 bundle。

@@ -36,6 +36,26 @@ window.__ModuleLoader__.load({
     })();
     const COLLAPSE_KEY = "dsh.topic-wall.collapsed-workspaces.v1";
     const draftCache = new Map();
+    const DRAFT_KEY = "dsh.topic-wall.drafts.v1";
+    function readDraftStore() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}");
+        return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+      } catch { return {}; }
+    }
+    function readDraft(sessionId) {
+      const store = readDraftStore();
+      return typeof store[sessionId] === "string" ? store[sessionId] : "";
+    }
+    function saveDraft(sessionId, text) {
+      try {
+        const store = readDraftStore();
+        if (text) store[sessionId] = text; else delete store[sessionId];
+        const keys = Object.keys(store);
+        while (keys.length > 80) delete store[keys.shift()];
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(store));
+      } catch {}
+    }
     const LOG_KEY = "dsh.topic-wall.log.v2";
     const LOG_SEEN_KEY = "dsh.topic-wall.log-seen.v1";
     const MAX_LOGS = 200;
@@ -1873,9 +1893,14 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
     }
 
     function CardConversation({ binding, status, t, layoutKey, tools, pending, onOpen }) {
-      const [draft, setDraft] = useState(() => draftCache.get(binding.sessionId) || "");
+      const [draft, setDraft] = useState(() => draftCache.get(binding.sessionId) || readDraft(binding.sessionId) || "");
       const textareaRef = useRef(null);
-      useEffect(() => { draftCache.set(binding.sessionId, draft); }, [binding.sessionId, draft]);
+      const updateDraft = (value) => {
+        draftCache.set(binding.sessionId, value);
+        saveDraft(binding.sessionId, value);
+        setDraft(value);
+      };
+      useEffect(() => { draftCache.set(binding.sessionId, draft); saveDraft(binding.sessionId, draft); }, [binding.sessionId, draft]);
       const [images, setImages] = useState([]);
       const [attachError, setAttachError] = useState(null);
       const [sending, setSending] = useState(false);
@@ -2031,7 +2056,7 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
         try {
           const pendingAttachments = images.map((image) => ({ type: "image", value: { previewUrl: image.previewUrl, name: image.name } }));
           submission = binding.session.beginSubmission({ mode: "queue", text, attachments: pendingAttachments });
-          setDraft("");
+          updateDraft("");
           const content = [
             ...images.map((image) => ({ type: "image", mediaType: image.mediaType, data: image.data, name: image.name })),
             ...(text ? [{ type: "text", text }] : []),
@@ -2041,7 +2066,7 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
           if (log) setTimeout(() => { log.scrollTop = log.scrollHeight; }, 80);
           if (!result.ok) {
             submission.abandon();
-            setDraft(text);
+            updateDraft(text);
             const reason = result.error && result.error.message ? result.error.message : t("sendError");
             setSendError(reason);
             logStore.add({ level: "error", source: "prompt", message: reason, context: { code: result.error && result.error.code, hasImages: images.length > 0 } });
@@ -2050,7 +2075,7 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
           }
         } catch (error) {
           if (submission) submission.abandon();
-          setDraft(text);
+          updateDraft(text);
           setSendError(error && error.message ? error.message : t("sendError"));
           logStore.add({ level: "error", source: "prompt", message: error && error.message || t("sendError"), stack: error && error.stack });
         } finally {
@@ -2191,7 +2216,7 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
             h("button", { className: "tw-attach", type: "button", title: t("attachImage"), "aria-label": t("attachImage"), onClick: () => imageInputRef.current && imageInputRef.current.click() }, h(ImageIcon)),
             h("textarea", {
               ref: textareaRef, rows: 1, value: draft, placeholder: running ? t("queuePlaceholder") : t("reply"), "aria-label": running ? t("queuePlaceholder") : t("reply"),
-              onChange: (event) => setDraft(event.currentTarget.value),
+              onChange: (event) => updateDraft(event.currentTarget.value),
               onKeyDown: (event) => {
                 if (event.key !== "Enter" || event.shiftKey) return;
                 if (event.nativeEvent && event.nativeEvent.isComposing) return;

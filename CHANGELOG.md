@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.7
+
+- Persist composer drafts per session in localStorage so a card remount or page refresh no longer loses typed text.
+
 ## 0.3.6
 
 - Keep the archived shelf visible but collapsed by default; the summary counter and shelf header both toggle it.
