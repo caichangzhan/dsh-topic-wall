@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1
+
+- Isolate render crashes per card: one broken card no longer takes down the whole wall.
+- Harden model-directory subscriptions and retained-session readiness.
+- Cap automatic history paging as a runaway-loop safeguard.
+
 ## 0.3.0
 
 - Add a per-card action menu: open original, inline rename, fork, archive.

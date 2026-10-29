@@ -198,6 +198,7 @@ window.__ModuleLoader__.load({
       panel: "对话墙", title: "对话墙", newChat: "新建聊天",
       model: "模型", modelLoading: "加载模型…", modelEmpty: "没有可用模型", modelSwitchFailed: "切换模型失败", modelAccount: "账号", modelSession: "最近会话",
       more: "更多操作", rename: "重命名", fork: "创建分支", archive: "归档会话", archiveConfirm: "归档这个会话？运行中的任务会被中断。", actionFailed: "操作失败", renameFailed: "重命名失败", forkFailed: "创建分支失败", archiveFailed: "归档失败",
+      cardCrashed: "这张卡片渲染失败，墙体和其他卡片仍可用。", retry: "重试",
       intro: "置顶、进行中、聊天集合",
       hint: "卡内可直接回复 · 点标题旁 ↗ 打开原会话",
       pinned: "置顶", active: "进行中", collection: "聊天集合",
@@ -240,6 +241,7 @@ window.__ModuleLoader__.load({
       panel: "Topic Wall", title: "Topic Wall", newChat: "New chat",
       model: "Model", modelLoading: "Loading models…", modelEmpty: "No models available", modelSwitchFailed: "Failed to switch model", modelAccount: "Account", modelSession: "Recent session",
       more: "More actions", rename: "Rename", fork: "Fork session", archive: "Archive session", archiveConfirm: "Archive this session? Running work will be interrupted.", actionFailed: "Action failed", renameFailed: "Rename failed", forkFailed: "Fork failed", archiveFailed: "Archive failed",
+      cardCrashed: "This card failed to render; the wall and other cards are still usable.", retry: "Retry",
       intro: "Pinned, active, and collected sessions",
       hint: "Reply in a card · use ↗ to open the original conversation",
       pinned: "Pinned", active: "Active", collection: "Collection",
@@ -1389,6 +1391,12 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
 .tw-page[data-style="hacker"] .tw-new-chat{border:1px solid var(--tw-accent);border-radius:0;background:transparent;color:var(--tw-accent)}
 .tw-page[data-style="hacker"] .tw-new-chat:hover{background:rgba(57,255,20,.08)}
 
+/* Card-level crash fallback */
+.tw-card-error{border-top-color:#B42318!important;min-height:180px}
+.tw-card-error .tw-card-title{color:#B42318}
+.tw-card-error .tw-card-actions{display:flex;flex-wrap:wrap;gap:5px;padding:8px 0 2px}
+.tw-card-error .tw-card-actions button{height:26px;padding:0 9px;border:1px solid var(--tw-line);border-radius:5px;background:var(--tw-pane);color:var(--tw-ink);font:inherit;font-size:11px;cursor:pointer}
+.tw-card-error .tw-card-actions button:hover{background:var(--tw-code)}
 /* Card action menu */
 .tw-card[data-menu-open="true"]{overflow:visible;z-index:31}
 .tw-card-menu{position:absolute;top:33px;right:28px;z-index:50;width:158px;padding:5px;border:1px solid var(--tw-line);border-radius:9px;background:var(--tw-pane);color:var(--tw-ink);box-shadow:0 14px 34px rgba(0,0,0,.18)}
@@ -1677,9 +1685,15 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
           setState({ status: "error", binding: null, error });
           return () => {};
         }
+        if (!ref || !ref.ready || typeof ref.ready.then !== "function") {
+          setState({ status: "error", binding: null, error: new Error("retain returned no ready promise") });
+          return () => {};
+        }
         ref.ready.then((binding) => {
           if (alive) setState({ status: "ready", binding, error: null });
         }, (error) => {
+          if (alive) setState({ status: "error", binding: null, error });
+        }).catch((error) => {
           if (alive) setState({ status: "error", binding: null, error });
         });
         return () => {
@@ -1910,7 +1924,9 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
         let cancelled = false;
         olderQueue.enqueue(async () => {
           try {
+            let pages = 0;
             while (!cancelled) {
+              if (++pages > 200) break;
               const snapshot = binding.eventSource.getSnapshot();
               if (!snapshot.hasMore) break;
               let oldest = Infinity;
@@ -2168,6 +2184,38 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
           )
         )
       );
+    }
+
+    class CardBoundary extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = { error: null };
+      }
+      static getDerivedStateFromError(error) { return { error }; }
+      componentDidCatch(error, info) {
+        logStore.add({
+          level: "error", source: "card", message: (error && error.message) || String(error || "card render error"),
+          stack: (error && error.stack) || "", context: { sessionId: this.props.sessionId, componentStack: (info && info.componentStack) || "" },
+        });
+      }
+      render() {
+        if (!this.state.error) return this.props.children;
+        const { t, sessionId, onOpen, onArchive } = this.props;
+        return h("article", { className: "tw-card tw-card-error" },
+          h("div", { className: "tw-card-body" },
+            h("div", { className: "tw-card-top" },
+              h("span", { className: "tw-led wait" }),
+              h("h3", { className: "tw-card-title" }, t("cardCrashed"))
+            ),
+            h("div", { className: "tw-log" }, h("div", { className: "tw-log-empty" }, sessionId)),
+            h("div", { className: "tw-card-actions" },
+              h("button", { type: "button", onClick: () => this.setState({ error: null }) }, t("retry")),
+              h("button", { type: "button", onClick: onOpen }, t("open")),
+              onArchive ? h("button", { type: "button", onClick: onArchive }, t("archive")) : null
+            )
+          )
+        );
+      }
     }
 
     function Card({ row, status, pinned, layout, radius, entering, pinFull, t, sessions, openSession, onPin, onPinId, layoutKey, bubbleAlign, tools, models, forkSession, archiveSession }) {
@@ -2494,8 +2542,14 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
         if (!models || !sessionId || typeof models.directoryFor !== "function") return null;
         try { return models.directoryFor(sessionId); } catch { return null; }
       }, [models, sessionId]);
-      const subscribe = useCallback((listener) => (directory ? directory.store.subscribe(listener) : () => {}), [directory]);
-      const getSnapshot = useCallback(() => (directory ? directory.store.getSnapshot() : EMPTY_MODEL_STATE), [directory]);
+      const subscribe = useCallback((listener) => {
+        if (!directory) return () => {};
+        try { return directory.store.subscribe(listener); } catch { return () => {}; }
+      }, [directory]);
+      const getSnapshot = useCallback(() => {
+        if (!directory) return EMPTY_MODEL_STATE;
+        try { return directory.store.getSnapshot() || EMPTY_MODEL_STATE; } catch { return EMPTY_MODEL_STATE; }
+      }, [directory]);
       const state = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
       useEffect(() => {
         if (!directory) return;
@@ -2685,6 +2739,11 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
         if (!sessionId) return;
         setNewChatIds((current) => new Set(current).add(sessionId));
       };
+      const renderCard = (props) => h(CardBoundary, {
+        key: props.key, t, sessionId: props.row && props.row.id,
+        onOpen: () => openSession(props.row.id),
+        onArchive: archiveSession ? () => { if (window.confirm(t("archiveConfirm"))) Promise.resolve(archiveSession(props.row.id)).catch((error) => logStore.add({ level: "error", source: "archive", message: error && error.message || t("archiveFailed"), stack: error && error.stack, context: { sessionId: props.row.id } })); } : null,
+      }, h(CardMemo, props));
       const cardProps = (row, pinned, layout) => {
         let entering = false;
         if (!cardsReady.current) {
@@ -2722,9 +2781,9 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
         ),
         h("main", { className: "tw-board" },
           shelf("pin", t("pinned"), pinnedRows.length, t("pinnedHint"),
-            pinnedRows.length ? h("div", { className: "tw-row" }, pinnedRows.map((row) => h(CardMemo, cardProps(row, true)))) : null, t("emptyPinned")),
+            pinnedRows.length ? h("div", { className: "tw-row" }, pinnedRows.map((row) => renderCard(cardProps(row, true)))) : null, t("emptyPinned")),
           shelf("active", t("active"), activeRows.length, t("activeHint"),
-            activeRows.length ? h("div", { className: "tw-row" }, activeRows.map((row) => h(CardMemo, cardProps(row, validPins.includes(row.id), "active")))) : null, t("emptyActive")),
+            activeRows.length ? h("div", { className: "tw-row" }, activeRows.map((row) => renderCard(cardProps(row, validPins.includes(row.id), "active")))) : null, t("emptyActive")),
           shelf("collection", t("collection"), collectionRows.length, t("collectionHint"),
             collectionRows.length ? h("div", { className: "tw-workspace" },
               h("div", { className: "tw-workspace-tools" },
@@ -2748,7 +2807,7 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
                     const visibleRows = expanded ? group.rows : group.rows.slice(0, limit);
                     const hidden = group.rows.length - visibleRows.length;
                     return h(React.Fragment, null,
-                      h("div", { className: "tw-grid" }, visibleRows.map((row) => h(CardMemo, cardProps(row, false)))),
+                      h("div", { className: "tw-grid" }, visibleRows.map((row) => renderCard(cardProps(row, false)))),
                       expanded && group.rows.length > limit ? h("div", { className: "tw-wspace-more" },
                         h("button", { type: "button", onClick: () => setExpandedSpaces((current) => { const next = new Set(current); next.delete(group.key); return next; }) }, t("showLess"))
                       ) : null,

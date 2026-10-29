@@ -1,6 +1,6 @@
 # dsh-topic-wall
 
-版本 0.3.0 · MIT License
+版本 0.3.1 · MIT License
 
 多会话「对话墙」插件：把 DeepSeek Harness 的会话按 **置顶 / 进行中 / 聊天集合** 三段排列成卡片。不进入会话，也能读历史、看状态、处理审批、发下一条消息。
 
@@ -49,7 +49,7 @@ dsh plugin --profile desktop add /path/to/dsh-topic-wall
 ### Tarball
 
 ```sh
-dsh plugin --profile desktop add /path/to/dsh-topic-wall-0.3.0.tgz
+dsh plugin --profile desktop add /path/to/dsh-topic-wall-0.3.1.tgz
 ```
 
 桌面端不加载 Web client HMR。更新 `client.js` 后需要**重启桌面端**；`Cmd+R` 可能仍用旧 bundle。
@@ -59,6 +59,7 @@ dsh plugin --profile desktop add /path/to/dsh-topic-wall-0.3.0.tgz
 - 需要当前 DSH 客户端提供 `sessions`、`uiSession`、`uiWorkspace`、`modelDirectories`。
 - 图片需要当前模型支持 vision。
 - 每卡模型选择作用于该会话；DSH 模型按会话存储。
+- 每张卡有独立 ErrorBoundary；单卡渲染异常不会再拖垮整面墙，卡内提供重试/打开/归档。
 - 没有自动化 UI 测试；`npm test` 是静态冒烟检查。
 - macOS/Electron 的 undici `setTypeOfService EINVAL` 有一个主机侧 guard，默认启用；设 `DSH_TOPIC_WALL_TOS_GUARD=0` 可关闭。
 
