@@ -1,6 +1,6 @@
 # dsh-topic-wall
 
-版本 0.3.7 · MIT License
+版本 0.3.8 · MIT License
 
 多会话「对话墙」插件：把 DeepSeek Harness 的会话按 **置顶 / 进行中 / 聊天集合** 三段排列成卡片。不进入会话，也能读历史、看状态、处理审批、发下一条消息。
 
@@ -20,7 +20,7 @@
 - 运行中发送进入宿主队列，可展开、转向、移除、全部转向。
 - 连续工具结果折叠成一组，组体只在展开时渲染。
 - 审批/单选题直接出现在卡片底部；长审批文字可悬停滚动、点击展开。
-- iOS 主题的新消息气泡弹入、按压回弹、输入三点动画，只对实时新消息生效。
+- iOS 主题的新消息气泡弹入、按压回弹、输入三点动画；QQ空间是「对方正在输入」蓝色气泡；黑客是终端提示符和绿色方块光标。
 
 **操作**
 - 每卡 ⋯ 菜单：打开原会话、重命名（卡内联）、创建分支、归档（带确认）；运行中的会话会再确认「停止并归档」；归档后按 `workspaces.archivedSessionIds` 立即从墙上移除。
@@ -49,7 +49,7 @@ dsh plugin --profile desktop add /path/to/dsh-topic-wall
 ### Tarball
 
 ```sh
-dsh plugin --profile desktop add /path/to/dsh-topic-wall-0.3.7.tgz
+dsh plugin --profile desktop add /path/to/dsh-topic-wall-0.3.8.tgz
 ```
 
 桌面端不加载 Web client HMR。更新 `client.js` 后需要**重启桌面端**；`Cmd+R` 可能仍用旧 bundle。

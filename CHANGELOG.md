@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.8
+
+- Give QQ Space and Hacker themes their own typing indicators: a blue chat bubble and a terminal prompt with a blinking block cursor.
+
 ## 0.3.7
 
 - Persist composer drafts per session in localStorage so a card remount or page refresh no longer loses typed text.
