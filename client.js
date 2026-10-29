@@ -202,7 +202,7 @@ window.__ModuleLoader__.load({
       cardCrashed: "这张卡片渲染失败，墙体和其他卡片仍可用。", retry: "重试",
       intro: "置顶、进行中、聊天集合",
       hint: "卡内可直接回复 · 点标题旁 ↗ 打开原会话",
-      pinned: "置顶", active: "进行中", collection: "聊天集合",
+      pinned: "置顶", active: "进行中", collection: "聊天集合", archived: "归档",
       pinnedHint: "固定最前", activeHint: "运行与等待优先", collectionHint: "其余会话",
       emptyPinned: "还没有置顶会话。", emptyActive: "当前没有进行中的会话。", emptyCollection: "还没有其他会话。",
       open: "打开原会话", pin: "置顶", unpin: "取消置顶", pinFull: "最多置顶 3 个",
@@ -245,7 +245,7 @@ window.__ModuleLoader__.load({
       cardCrashed: "This card failed to render; the wall and other cards are still usable.", retry: "Retry",
       intro: "Pinned, active, and collected sessions",
       hint: "Reply in a card · use ↗ to open the original conversation",
-      pinned: "Pinned", active: "Active", collection: "Collection",
+      pinned: "Pinned", active: "Active", collection: "Collection", archived: "Archived",
       pinnedHint: "Always first", activeHint: "Running and waiting first", collectionHint: "Everything else",
       emptyPinned: "No pinned sessions yet.", emptyActive: "No active sessions right now.", emptyCollection: "No other sessions yet.",
       open: "Open original conversation", pin: "Pin", unpin: "Unpin", pinFull: "Up to 3 pins",
@@ -2737,6 +2737,15 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
         const st = statusMap.get(row.id);
         return !!(st && st.pendingInteraction);
       }).length;
+      const archivedCount = useMemo(() => {
+        const seen = new Set();
+        return items.filter((row) => {
+          if (!row || seen.has(row.id)) return false;
+          seen.add(row.id);
+          if (row.parentId || (row.depth || 0) > 0 || row.origin === "subagent") return false;
+          return archivedIds.has(row.id);
+        }).length;
+      }, [items, archivedIds]);
 
       const togglePin = useCallback((id) => {
         setPins((current) => {
@@ -2797,7 +2806,9 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
               h("span", { className: "sep" }, "/"),
               h("span", null, h("b", null, validPins.length), " " + t("pinned")),
               h("span", { className: "sep" }, "/"),
-              h("span", { className: pendingCount ? "wait" : "" }, h("b", null, pendingCount), " " + t("waiting"))
+              h("span", { className: pendingCount ? "wait" : "" }, h("b", null, pendingCount), " " + t("waiting")),
+              h("span", { className: "sep" }, "/"),
+              h("span", null, h("b", null, archivedCount), " " + t("archived"))
             )
           ),
           h("div", { className: "tw-top-right" },

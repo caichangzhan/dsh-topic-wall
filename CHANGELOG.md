@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.4
+
+- Show the archived-session count in the wall summary: `会话 / 置顶 / 待处理 / 归档`.
+
 ## 0.3.3
 
 - Filter `workspaces.archivedSessionIds` out of the wall: archived sessions no longer remain as cards even though `sessions.list` still contains them.
