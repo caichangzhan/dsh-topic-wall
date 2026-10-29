@@ -229,7 +229,7 @@ window.__ModuleLoader__.load({
       waiting: "待处理", running: "运行", idle: "空闲", done: "完成",
       unnamed: "未命名会话", workspace: "工作区", sessions: "会话",
       reply: "回复…", send: "发送", stop: "中断", loading: "正在读取会话…",
-      queuePlaceholder: "排队回复…", queueCount: "{n} 条排队", queueExpand: "展开排队", queueCollapse: "收起排队", sending: "发送中", steer: "转向", remove: "移除", steerAll: "全部转向",
+      queuePlaceholder: "排队回复…", queueCount: "{n} 条排队", queueExpand: "展开排队", queueCollapse: "收起排队", sending: "发送中", steer: "转向", remove: "移除", steerAll: "全部转向", queueEdit: "编辑", queueSave: "保存", queueCancel: "取消", queueEditOnlyText: "含附件的排队消息暂不支持编辑",
       loadOlder: "加载更早", loadingOlder: "加载中…", jumpLatest: "回到底部",
       loadingHistory: "正在读取历史…", noHistory: "还没有消息，发一句开始。",
       historyError: "历史读取失败，点 ↗ 打开原会话。", sendError: "发送失败",
@@ -272,7 +272,7 @@ window.__ModuleLoader__.load({
       waiting: "Waiting", running: "Running", idle: "Idle", done: "Done",
       unnamed: "Untitled session", workspace: "Workspace", sessions: "sessions",
       reply: "Reply…", send: "Send", stop: "Stop", loading: "Loading sessions…",
-      queuePlaceholder: "Queue a reply…", queueCount: "{n} queued", queueExpand: "Expand queue", queueCollapse: "Collapse queue", sending: "Sending", steer: "Steer", remove: "Remove", steerAll: "Steer all",
+      queuePlaceholder: "Queue a reply…", queueCount: "{n} queued", queueExpand: "Expand queue", queueCollapse: "Collapse queue", sending: "Sending", steer: "Steer", remove: "Remove", steerAll: "Steer all", queueEdit: "Edit", queueSave: "Save", queueCancel: "Cancel", queueEditOnlyText: "Queued messages with attachments cannot be edited",
       loadOlder: "Load earlier", loadingOlder: "Loading…", jumpLatest: "Back to bottom",
       loadingHistory: "Loading history…", noHistory: "No messages yet. Send one to start.",
       historyError: "History unavailable; use ↗ to open the conversation.", sendError: "Send failed",
@@ -697,6 +697,9 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
 .tw-queue-text{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tw-queue-item button{width:18px;height:18px;flex:none;border:0;border-radius:3px;background:transparent;color:var(--tw-muted);cursor:pointer;font-size:11px;line-height:1;display:grid;place-items:center}
 .tw-queue-item button:hover{background:var(--tw-accent-line);color:var(--tw-ink)}
+.tw-queue-edit{flex:1;min-width:0;height:19px;padding:0 4px;border:1px solid var(--tw-accent);border-radius:4px;background:var(--tw-pane);color:var(--tw-ink);font:inherit;font-size:calc(var(--tw-font) * .73);outline:none}
+.tw-queue-noedit{flex:none;color:var(--tw-muted);font-size:10px;opacity:.65}
+.tw-queue-item.is-editing{gap:2px}
 .tw-queue-sending{color:var(--tw-muted);font-size:calc(var(--tw-font) * .66);flex:none}
 .tw-compose{display:flex;align-items:flex-end;gap:3px;margin-top:auto;padding-top:5px}
 .tw-compose-field{position:relative;flex:1;min-width:0;display:flex;align-items:flex-end}
@@ -2003,8 +2006,11 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
       const sendingQueue = pendingSubmissions.filter((item) => item.placement === "queued" && !admittedRpcIds.has(item.requestId));
       const queueCount = queueRows.length + sendingQueue.length;
       const [queueOpen, setQueueOpen] = useState(false);
+      const [editingQueueId, setEditingQueueId] = useState(null);
+      const [queueDraft, setQueueDraft] = useState("");
+      const [queueError, setQueueError] = useState(null);
       useEffect(() => {
-        if (queueCount === 0) setQueueOpen(false);
+        if (queueCount === 0) { setQueueOpen(false); setEditingQueueId(null); }
       }, [queueCount]);
       const messages = useMemo(() => {
         let all = messagesOf(eventSnap.entries);
@@ -2162,6 +2168,21 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
         try { await binding.session.updateQueue(itemId, { kind: "remove" }); }
         catch (error) { logStore.add({ level: "error", source: "queue", message: error && error.message || "remove queued failed", stack: error && error.stack }); }
       };
+      const queueEditable = (row) => Array.isArray(row.content) ? row.content.every((block) => block && block.type === "text") : !row.content;
+      const startQueueEdit = (row) => { setEditingQueueId(row.id); setQueueDraft(textOf(row.content) || ""); };
+      const saveQueueEdit = async (itemId) => {
+        const next = queueDraft.trim();
+        if (!next) return;
+        setQueueError(null);
+        try {
+          await binding.session.updateQueue(itemId, { kind: "edit", content: [{ type: "text", text: next }] });
+          setEditingQueueId(null);
+          setQueueDraft("");
+        } catch (error) {
+          setQueueError(error && error.message || t("actionFailed"));
+          logStore.add({ level: "error", source: "queue", message: error && error.message || "edit queued failed", stack: error && error.stack });
+        }
+      };
       const steerQueued = async (itemId) => {
         try { await binding.session.updateQueue(itemId, { kind: "steer" }); }
         catch (error) { logStore.add({ level: "error", source: "queue", message: error && error.message || "steer queued failed", stack: error && error.stack }); }
@@ -2258,8 +2279,27 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
           queueCount === 1 || queueOpen ? h("div", { className: "tw-queue-list" },
             queueRows.map((row) => {
               const text = textOf(row.content) || "[附件]";
+              const editable = queueEditable(row);
+              const editing = editingQueueId === row.id;
+              if (editing) {
+                return h("div", { className: "tw-queue-item is-editing", key: row.id },
+                  h("input", {
+                    className: "tw-queue-edit", value: queueDraft, autoFocus: true, "aria-label": t("queueEdit"),
+                    onChange: (event) => setQueueDraft(event.currentTarget.value),
+                    onKeyDown: (event) => {
+                      if (event.key === "Enter") { event.preventDefault(); void saveQueueEdit(row.id); }
+                      if (event.key === "Escape") { event.preventDefault(); setEditingQueueId(null); }
+                    },
+                  }),
+                  h("button", { type: "button", title: t("queueSave"), "aria-label": t("queueSave"), onClick: () => { void saveQueueEdit(row.id); } }, "✓"),
+                  h("button", { type: "button", title: t("queueCancel"), "aria-label": t("queueCancel"), onClick: () => setEditingQueueId(null) }, "×")
+                );
+              }
               return h("div", { className: "tw-queue-item", key: row.id },
                 h("span", { className: "tw-queue-text", title: text }, text),
+                editable
+                  ? h("button", { type: "button", title: t("queueEdit"), "aria-label": t("queueEdit"), onClick: () => startQueueEdit(row) }, "✎")
+                  : h("span", { className: "tw-queue-noedit", title: t("queueEditOnlyText"), "aria-label": t("queueEditOnlyText") }, "⊘"),
                 h("button", { type: "button", title: t("steer"), "aria-label": t("steer"), onClick: () => { void steerQueued(row.id); } }, "↗"),
                 h("button", { type: "button", title: t("remove"), "aria-label": t("remove"), onClick: () => { void removeQueued(row.id); } }, "×")
               );
@@ -2267,7 +2307,8 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
             sendingQueue.map((item) => h("div", { className: "tw-queue-item", key: item.requestId },
               h("span", { className: "tw-queue-text", title: item.text }, item.text || "[附件]"),
               h("span", { className: "tw-queue-sending" }, t("sending"))
-            ))
+            )),
+            queueError ? h("div", { className: "tw-error" }, queueError) : null
           ) : null
         ) : null,
         h(PendingDock, { pending, t, onOpen }),

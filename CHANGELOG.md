@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0
+
+- Inline editing for queued messages: ✎ turns the row into an input; Enter saves, Escape cancels.
+- Queue edits support text-only content; rows with attachments stay read-only with a visible reason.
+- Queue edit failures surface inline instead of only in logs.
+
 ## 0.3.9
 
 - Give all three themes full-page backgrounds: iOS mesh + dot grid, QQ Space sky/clouds, Hacker grid + green glow.
