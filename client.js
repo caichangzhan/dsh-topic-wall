@@ -1401,6 +1401,9 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
 .tw-page[data-style="hacker"] .tw-new-chat:hover{background:rgba(57,255,20,.08)}
 
 .tw-card-action-error{margin:3px 0 0;padding:4px 7px;border-radius:5px;background:rgba(180,35,24,.07);color:#B42318;font-size:10.5px;line-height:1.4}
+.tw-shelf-head-toggle{cursor:pointer;user-select:none}
+.tw-shelf-head-toggle:hover{background:color-mix(in srgb,var(--tw-pane) 88%,var(--tw-ink) 3%)}
+.tw-shelf-caret{flex:none;color:var(--tw-muted);font-size:10px;line-height:1}
 /* Card-level crash fallback */
 .tw-card-error{border-top-color:#B42318!important;min-height:180px}
 .tw-card-error .tw-card-title{color:#B42318}
@@ -2890,9 +2893,17 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
                 );
               })
             ) : null, t("emptyCollection")),
-          showArchived ? h("div", { id: "tw-archived" }, shelf("archived", t("archived"), archivedRows.length, t("archivedHint"),
-            archivedRows.length ? h("div", { className: "tw-grid" }, archivedRows.map((row) => renderCard({ ...cardProps(row, false, "collection"), archived: true }))) : null,
-            t("emptyArchived"))) : null,
+          archivedRows.length > 0 || showArchived ? h("section", { className: "tw-shelf", id: "tw-archived", "data-shelf": "archived" },
+            h("div", { className: "tw-shelf-head tw-shelf-head-toggle", role: "button", tabIndex: 0, "aria-expanded": showArchived, onClick: toggleArchived, onKeyDown: (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleArchived(); } } },
+              h("h2", null, t("archived")),
+              h("span", { className: "tw-shelf-hint" }, t("archivedHint")),
+              h("span", { className: "tw-shelf-count" }, String(archivedRows.length).padStart(2, "0")),
+              h("span", { className: "tw-shelf-caret", "aria-hidden": true }, showArchived ? "▾" : "▸")
+            ),
+            showArchived ? h("div", { className: "tw-shelf-body" },
+              archivedRows.length ? h("div", { className: "tw-grid" }, archivedRows.map((row) => renderCard({ ...cardProps(row, false, "collection"), archived: true }))) : h("p", { className: "tw-empty" }, t("emptyArchived"))
+            ) : null
+          ) : null,
           h("div", { className: "tw-foot" }, h("i"), t("footer"))
         ),
         settingsOpen ? h(React.Fragment, null,

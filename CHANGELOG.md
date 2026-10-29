@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.6
+
+- Keep the archived shelf visible but collapsed by default; the summary counter and shelf header both toggle it.
+
 ## 0.3.5
 
 - Add icons to all four summary counters.
