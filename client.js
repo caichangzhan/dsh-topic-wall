@@ -202,7 +202,7 @@ window.__ModuleLoader__.load({
       cardCrashed: "这张卡片渲染失败，墙体和其他卡片仍可用。", retry: "重试",
       intro: "置顶、进行中、聊天集合",
       hint: "卡内可直接回复 · 点标题旁 ↗ 打开原会话",
-      pinned: "置顶", active: "进行中", collection: "聊天集合", archived: "归档",
+      pinned: "置顶", active: "进行中", collection: "聊天集合", archived: "归档", archivedHint: "已归档会话", emptyArchived: "没有已归档会话。", unarchive: "取消归档",
       pinnedHint: "固定最前", activeHint: "运行与等待优先", collectionHint: "其余会话",
       emptyPinned: "还没有置顶会话。", emptyActive: "当前没有进行中的会话。", emptyCollection: "还没有其他会话。",
       open: "打开原会话", pin: "置顶", unpin: "取消置顶", pinFull: "最多置顶 3 个",
@@ -245,7 +245,7 @@ window.__ModuleLoader__.load({
       cardCrashed: "This card failed to render; the wall and other cards are still usable.", retry: "Retry",
       intro: "Pinned, active, and collected sessions",
       hint: "Reply in a card · use ↗ to open the original conversation",
-      pinned: "Pinned", active: "Active", collection: "Collection", archived: "Archived",
+      pinned: "Pinned", active: "Active", collection: "Collection", archived: "Archived", archivedHint: "Archived sessions", emptyArchived: "No archived sessions.", unarchive: "Unarchive",
       pinnedHint: "Always first", activeHint: "Running and waiting first", collectionHint: "Everything else",
       emptyPinned: "No pinned sessions yet.", emptyActive: "No active sessions right now.", emptyCollection: "No other sessions yet.",
       open: "Open original conversation", pin: "Pin", unpin: "Unpin", pinFull: "Up to 3 pins",
@@ -500,6 +500,11 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
 .tw-summary{display:flex;align-items:center;gap:5px;margin-left:6px;color:var(--tw-top-muted);font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:10px;white-space:nowrap;overflow:hidden}
 .tw-summary .sep{color:rgba(255,255,255,.28)}
 .tw-summary b{color:var(--tw-top-ink);font-weight:500}
+.tw-summary-item{display:inline-flex;align-items:center;gap:3px;min-width:0}
+.tw-summary-item svg{width:10px;height:10px;flex:none;opacity:.8}
+.tw-summary .tw-summary-archived{border:0;background:transparent;color:inherit;font:inherit;padding:0;cursor:pointer;opacity:.8}
+.tw-summary .tw-summary-archived:hover{color:var(--tw-top-ink);opacity:1}
+.tw-summary .tw-summary-archived.is-active{color:var(--tw-top-ink);opacity:1;text-decoration:underline;text-underline-offset:2px}
 .tw-summary .wait{color:#FF8A5C}
 .tw-hint{color:var(--tw-top-muted);font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tw-top-right{display:flex;align-items:center;gap:8px;min-width:0}
@@ -536,6 +541,9 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
   transition:border-color .14s,background .14s;
 }
 .tw-card:hover{border-color:color-mix(in srgb,var(--tw-line) 50%,var(--tw-ink));background:color-mix(in srgb,var(--tw-pane) 94%,var(--tw-ink) 3%)}
+.tw-card.is-archived{opacity:.78;border-top-color:var(--tw-line)!important}
+.tw-card.is-archived:hover{opacity:1}
+
 .tw-card.pin{flex:0 0 250px;height:390px;background:color-mix(in srgb,var(--tw-rail-pin) 4%,var(--tw-pane));border-top:2px solid var(--tw-rail-pin)}
 .tw-card.active{flex:0 0 calc((100% - (var(--tw-cols,5) - 1) * var(--tw-gap,12px)) / var(--tw-cols,5));max-width:none;height:var(--tw-card-h,450px);background:color-mix(in srgb,var(--tw-rail-active) 4%,var(--tw-pane));border-top:2px solid var(--tw-rail-active)}
 .tw-card.collection{height:var(--tw-card-h,360px);background:color-mix(in srgb,var(--tw-accent) 2%,var(--tw-pane));border-top:2px solid color-mix(in srgb,var(--tw-accent) 45%,var(--tw-line))}
@@ -1500,6 +1508,13 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
     const SendIcon = () => h("svg", { viewBox: "0 0 24 24", width: 13, height: 13, fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true },
       h("path", { d: "M12 19V5" }), h("path", { d: "m6 11 6-6 6 6" })
     );
+    const SummaryIcon = ({ kind }) => {
+      const common = { viewBox: "0 0 24 24", width: 10, height: 10, fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true };
+      if (kind === "pin") return h("svg", common, h("path", { d: "M9 4h6l-1 6 4 4H6l4-4-1-6z" }), h("path", { d: "M12 14v6" }));
+      if (kind === "wait") return h("svg", common, h("circle", { cx: 12, cy: 12, r: 8 }), h("path", { d: "M12 8v4l3 2" }));
+      if (kind === "archived") return h("svg", common, h("path", { d: "M4 7h16v3H4z" }), h("path", { d: "M6 10v8h12v-8" }), h("path", { d: "M10 14h4" }));
+      return h("svg", common, h("path", { d: "M5 6h14v5H5z" }), h("path", { d: "M7 11v7h10v-7" }), h("path", { d: "M9 14h6" }));
+    };
     const MoreIcon = () => h("svg", { viewBox: "0 0 24 24", width: 14, height: 14, fill: "currentColor", "aria-hidden": true },
       h("circle", { cx: 5, cy: 12, r: 1.5 }),
       h("circle", { cx: 12, cy: 12, r: 1.5 }),
@@ -2220,7 +2235,7 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
       }
     }
 
-    function Card({ row, status, pinned, layout, radius, entering, pinFull, t, sessions, openSession, onPin, onPinId, layoutKey, bubbleAlign, tools, models, forkSession, archiveSession }) {
+    function Card({ row, status, pinned, layout, radius, entering, pinFull, t, sessions, openSession, onPin, onPinId, layoutKey, bubbleAlign, tools, models, forkSession, archiveSession, unarchiveSession, archived }) {
       const cardRef = useRef(null);
       const menuRef = useRef(null);
       const renameRef = useRef(null);
@@ -2325,6 +2340,15 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
         catch (error) { setActionError(t("forkFailed")); logStore.add({ level: "error", source: "fork", message: error && error.message || t("forkFailed"), stack: error && error.stack, context: { sessionId: row.id } }); }
         finally { setActing(false); }
       };
+      const doUnarchive = async () => {
+        setMenuOpen(false);
+        if (typeof unarchiveSession !== "function") return;
+        setActing(true);
+        setActionError("");
+        try { await unarchiveSession(row.id); }
+        catch (error) { setActionError(t("actionFailed")); logStore.add({ level: "error", source: "unarchive", message: error && error.message || t("actionFailed"), stack: error && error.stack, context: { sessionId: row.id } }); }
+        finally { setActing(false); }
+      };
       const doArchive = async () => {
         setMenuOpen(false);
         if (typeof archiveSession !== "function") return;
@@ -2348,7 +2372,7 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
         }
       };
       return h("article", {
-        className: "tw-card " + variant + statusClass + (entering ? " is-entering" : "") + (inView ? "" : " is-offscreen"), ref: cardRef, "data-menu-open": menuOpen ? "true" : "false",
+        className: "tw-card " + variant + statusClass + (entering ? " is-entering" : "") + (inView ? "" : " is-offscreen") + (archived ? " is-archived" : ""), ref: cardRef, "data-menu-open": menuOpen ? "true" : "false",
         "data-bubbles": (pinned || variant === "active") ? "split" : (bubbleAlign === "left" ? "left" : "split"),
         onPointerDown: (event) => { pointerStart.current = { x: event.clientX, y: event.clientY }; },
         onClick: (event) => {
@@ -2403,7 +2427,7 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
           h("button", { type: "button", role: "menuitem", onClick: () => { setMenuOpen(false); openSession(row.id); } }, t("open")),
           h("button", { type: "button", role: "menuitem", onClick: startRename }, t("rename")),
           h("button", { type: "button", role: "menuitem", onClick: () => { void doFork(); } }, t("fork")),
-          h("button", { type: "button", role: "menuitem", className: "is-danger", onClick: () => { void doArchive(); } }, t("archive"))
+          archived ? h("button", { type: "button", role: "menuitem", onClick: () => { void doUnarchive(); } }, t("unarchive")) : h("button", { type: "button", role: "menuitem", className: "is-danger", onClick: () => { void doArchive(); } }, t("archive"))
         ) : null,
         (running || waiting) && inView ? h("span", { className: "tw-ants" + (running ? " run" : ""), "aria-hidden": true }, h("svg", { preserveAspectRatio: "none" }, h("rect", { rx: radius === "soft" ? 18 : 0 }))) : null
       );
@@ -2615,7 +2639,7 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
     }
 
     function TopicWallPage(props) {
-      const { sessionsStore, statusStore, workspacesStore, t, sessions, openSession, newChatIn, modelDirectories, forkSession, archiveSession } = props;
+      const { sessionsStore, statusStore, workspacesStore, t, sessions, openSession, newChatIn, modelDirectories, forkSession, archiveSession, unarchiveSession } = props;
       const list = useSyncExternalStore(
         (cb) => sessionsStore.subscribe(cb), () => sessionsStore.getSnapshot(), () => sessionsStore.getSnapshot()
       );
@@ -2637,6 +2661,7 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
       const [pins, setPins] = useState(readPins);
       const [settings, setSettings] = useState(readSettings);
       const [settingsOpen, setSettingsOpen] = useState(false);
+      const [showArchived, setShowArchived] = useState(false);
       const [logOpen, setLogOpen] = useState(false);
       const [collapsedSpaces, setCollapsedSpaces] = useState(() => new Set(readCollapsed()));
       const [expandedSpaces, setExpandedSpaces] = useState(() => new Set());
@@ -2737,15 +2762,23 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
         const st = statusMap.get(row.id);
         return !!(st && st.pendingInteraction);
       }).length;
-      const archivedCount = useMemo(() => {
+      const archivedRows = useMemo(() => {
         const seen = new Set();
         return items.filter((row) => {
           if (!row || seen.has(row.id)) return false;
           seen.add(row.id);
           if (row.parentId || (row.depth || 0) > 0 || row.origin === "subagent") return false;
           return archivedIds.has(row.id);
-        }).length;
+        }).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
       }, [items, archivedIds]);
+      const archivedCount = archivedRows.length;
+      const toggleArchived = () => {
+        setShowArchived((value) => {
+          const next = !value;
+          if (next) requestAnimationFrame(() => { const el = document.getElementById("tw-archived"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); });
+          return next;
+        });
+      };
 
       const togglePin = useCallback((id) => {
         setPins((current) => {
@@ -2791,7 +2824,7 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
         key: row.id, row, status: statusMap.get(row.id), pinned, layout, radius: settings.radius, entering,
         pinFull: pins.length >= MAX_PINS, t, sessions, openSession: open,
         onPin: togglePin, onPinId: row.id, bubbleAlign: settings.bubbleAlign, tools: settings.tools, models: modelDirectories,
-        forkSession, archiveSession,
+        forkSession, archiveSession, unarchiveSession,
         layoutKey: settings.cardHeight + ":" + settings.font + ":" + settings.columns,
       };
       };
@@ -2802,13 +2835,14 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
             h("span", { className: "tw-mark" }, h("i"), h("i")),
             h("h1", { className: "tw-title" }, t("title")),
             h("div", { className: "tw-summary" },
-              h("span", null, h("b", null, rows.length), " " + t("sessions")),
+              h("span", { className: "tw-summary-item" }, h(SummaryIcon, { kind: "sessions" }), h("b", null, rows.length), " " + t("sessions")),
               h("span", { className: "sep" }, "/"),
-              h("span", null, h("b", null, validPins.length), " " + t("pinned")),
+              h("span", { className: "tw-summary-item" }, h(SummaryIcon, { kind: "pin" }), h("b", null, validPins.length), " " + t("pinned")),
               h("span", { className: "sep" }, "/"),
-              h("span", { className: pendingCount ? "wait" : "" }, h("b", null, pendingCount), " " + t("waiting")),
+              h("span", { className: "tw-summary-item" + (pendingCount ? " wait" : "") }, h(SummaryIcon, { kind: "wait" }), h("b", null, pendingCount), " " + t("waiting")),
               h("span", { className: "sep" }, "/"),
-              h("span", null, h("b", null, archivedCount), " " + t("archived"))
+              h("button", { className: "tw-summary-item tw-summary-archived" + (showArchived ? " is-active" : ""), type: "button", title: t("archivedHint"), "aria-expanded": showArchived, onClick: toggleArchived },
+                h(SummaryIcon, { kind: "archived" }), h("b", null, archivedCount), " " + t("archived"))
             )
           ),
           h("div", { className: "tw-top-right" },
@@ -2856,6 +2890,9 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
                 );
               })
             ) : null, t("emptyCollection")),
+          showArchived ? h("div", { id: "tw-archived" }, shelf("archived", t("archived"), archivedRows.length, t("archivedHint"),
+            archivedRows.length ? h("div", { className: "tw-grid" }, archivedRows.map((row) => renderCard({ ...cardProps(row, false, "collection"), archived: true }))) : null,
+            t("emptyArchived"))) : null,
           h("div", { className: "tw-foot" }, h("i"), t("footer"))
         ),
         settingsOpen ? h(React.Fragment, null,
@@ -2970,6 +3007,10 @@ html[data-platform="darwin"] .tw-top{padding-top:calc(12px + var(--dsh-frame-top
           async archiveSession(sessionId, options) {
             if (!uiWorkspace || typeof uiWorkspace.archiveSession !== "function") throw new Error("archive is unavailable");
             return options === undefined ? uiWorkspace.archiveSession(sessionId) : uiWorkspace.archiveSession(sessionId, options);
+          },
+          async unarchiveSession(sessionId) {
+            if (!uiWorkspace || typeof uiWorkspace.unarchiveSession !== "function") throw new Error("unarchive is unavailable");
+            return uiWorkspace.unarchiveSession(sessionId);
           },
           async newChatIn(cwd) {
             try {

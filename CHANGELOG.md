@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.5
+
+- Add icons to all four summary counters.
+- Make the archived counter clickable: opens an archived shelf with restore actions.
+
 ## 0.3.4
 
 - Show the archived-session count in the wall summary: `会话 / 置顶 / 待处理 / 归档`.
